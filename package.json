@@ -18,7 +18,7 @@
   "scripts": {
     "deploy": "gcloud functions deploy example --trigger-http --runtime nodejs16 --region us-central1",
     "test": "gcloud functions describe example",
-    "start": "functions-framework --source=build/src/ --target=example",
+    "start": "functions-framework --source=build/src/ --target=example --env-vars-file .env",
     "watch": "concurrently \"tsc -w\" \"nodemon --watch ./build/ --exec yarn start\"",
     "lint": "gts lint",
     "clean": "gts clean",
