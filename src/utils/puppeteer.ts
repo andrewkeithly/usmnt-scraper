@@ -22,7 +22,7 @@ const PUPPETEER_OPTIONS = {
 export const launchOptions: Parameters<typeof puppeteer['launch']>[0] =
   PUPPETEER_OPTIONS;
 
-export type Fn<Params extends readonly unknown[] = any[], Result = any> = (
+export type Fn<Params extends readonly unknown[] = never[], Result = never> = (
   ...params: Params
 ) => Result;
 
