@@ -1,41 +1,59 @@
+import {mkdir, lstat, writeFile} from 'node:fs/promises';
+import * as path from 'node:path';
+
+import {assert} from './utils/asserts';
 import {usePage} from './utils/puppeteer';
 
 export async function example() {
   const url =
     'https://www.transfermarkt.us/spieler-statistik/legionaere/statistik?land_id=184&land=40&plus=1';
 
-  const getPages = (): string[] => {
-    const paginationElelementArr: HTMLAnchorElement[] = Array.from(
-      document.querySelectorAll('.tm-pagination > li > a')
-    );
-    return Array.from(paginationElelementArr)
+  const getPages = (): string[] =>
+    [...document.querySelectorAll<HTMLAnchorElement>('.tm-pagination > li > a')]
       .slice(0, -2)
       .map(el => el.href);
+
+  type ParsedImageData = Record<'placeholder' | 'source', string>;
+
+  type ParsedRowData = Record<
+    | 'age'
+    | 'birthCity'
+    | 'birthCountry'
+    | 'contractExpiration'
+    | 'index'
+    | 'league'
+    | 'marketValue'
+    | 'name'
+    | 'position'
+    | 'team'
+    | 'teamShort',
+    string
+  > & {
+    images: ParsedImageData[];
   };
 
   // This will be executed in-page by the browser's V8
-  const pageEvalFn = () => {
+  const pageEvalFn = (): ParsedRowData[] => {
     // Because of the above, assert needs to be (re=)defined in the V8 isolate
     // context in order to use it
     function assert(expr: unknown, msg?: string): asserts expr {
       if (!expr) throw new Error(msg);
     }
-    const rowsElementArr: HTMLElement[] = Array.from(
-      document.querySelectorAll('.items > tbody > tr')
-    );
 
-    assert(rowsElementArr, 'Assert document array found');
-    const returnRows: Array<string | object> = [];
-    rowsElementArr.forEach(documentPart => {
-      const imgArray = Array.from(documentPart.querySelectorAll('img')).map(
-        el => {
-          return {placeholder: el.alt, source: el.currentSrc};
-        }
-      );
+    const rowsElementArr: HTMLTableRowElement[] = [
+      ...document.querySelectorAll<HTMLTableRowElement>('.items > tbody > tr'),
+    ];
 
-      const parts = documentPart.outerText.split(/\t*\n+\t+\s*|\n*\t+|\n+/);
+    assert(rowsElementArr.length > 0, 'Table rows not found');
 
-      returnRows.push({
+    return rowsElementArr.map(row => {
+      const imgArray: ParsedImageData[] = [
+        ...row.querySelectorAll<HTMLImageElement>(':scope img'),
+      ].map(el => ({placeholder: el.alt, source: el.currentSrc}));
+
+      const parts = row.outerText.split(/\t*\n+\t+\s*|\n*\t+|\n+/);
+
+      return {
         index: parts[0],
         name: parts[1],
         position: parts[2],
@@ -51,21 +69,31 @@ export async function example() {
         contractExpiration: parts[7],
         marketValue: parts[8],
         images: imgArray,
-      });
+      };
     });
-
-    return returnRows;
   };
-  const promiseArray: Promise<any>[] = [];
-  const pages = await usePage(url, page => page.evaluate(getPages));
-  console.log(pages);
-  pages?.forEach(pageUrl => {
-    promiseArray.push(usePage(url, page => page.evaluate(pageUrl)));
-  });
 
-  // Promise.all(promiseArray).then(res => {
-  //   const data: Array<string | object> = [...res];
-  //   console.table(data);
-  // });
-  // const todos = await usePage(url, page => page.evaluate(pageEvalFn));
+  const urls = await usePage(url, page => page.evaluate(getPages));
+  assert(urls.length > 0, 'Pagination URLs not found');
+
+  const results = await Promise.all(
+    urls.map(url => usePage(url, page => page.evaluate(pageEvalFn)))
+  );
+
+  // Since this is CJS:
+  const rootDir = path.resolve(__dirname, '..', '..');
+
+  assert(
+    (await lstat(path.join(rootDir, 'package.json'))).isFile(),
+    '"package.json" not found'
+  );
+
+  const dataDir = path.join(rootDir, 'data');
+  await mkdir(dataDir, {recursive: true});
+
+  const filePath = path.join(dataDir, 'results.json');
+  await writeFile(filePath, JSON.stringify(results));
+  console.log(`Data written to ${filePath}`);
 }
+
+example();
