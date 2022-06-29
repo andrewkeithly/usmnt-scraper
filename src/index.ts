@@ -17,7 +17,7 @@ export async function example() {
   const pageEvalFn = () => {
     // Because of the above, assert needs to be (re=)defined in the V8 isolate
     // context in order to use it
-    function assert(expr: unknown, msg = ''): asserts expr {
+    function assert(expr: unknown, msg?: string): asserts expr {
       if (!expr) throw new Error(msg);
     }
     const rowsElementArr: HTMLElement[] = Array.from(
