@@ -12,15 +12,13 @@ export async function example() {
     const pages: string[] = [];
     const baseUrl =
       'https://www.transfermarkt.us/spieler-statistik/legionaere/statistik?land_id=184&land=184&plus=1&page=';
-    const lastPaginationEl = document.querySelector<HTMLAnchorElement>(
-      '.tm-pagination__list-item--icon-last-page > a'
-    );
-    const lastPaginationHref = lastPaginationEl?.href;
-    const lastPaginationPage =
-      lastPaginationHref && lastPaginationHref.match(/(?<=page=)[\d]+/g)
-        ? lastPaginationHref.match(/(?<=page=)[\d]+/g)
-        : ['1'];
-    const lastPage = lastPaginationPage ? lastPaginationPage[0] : '1';
+
+    const lastPage =
+      document
+        .querySelector<HTMLAnchorElement>(
+          '.tm-pagination__list-item--icon-last-page > a'
+        )
+        ?.href?.match(/(?<=page=)[\d]+/g)?.[0] ?? '1';
     for (let i = 1; i <= parseInt(lastPage); i++) {
       pages.push(`${baseUrl}${i.toString()}`);
     }
