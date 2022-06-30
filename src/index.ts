@@ -30,17 +30,15 @@ export async function example() {
   type ParsedImageData = Record<'placeholder' | 'source', string>;
 
   type ParsedRowData = Record<
-    | 'age'
-    | 'birthCity'
-    | 'birthCountry'
-    | 'contractExpiration'
-    | 'index'
-    | 'league'
-    | 'marketValue'
+    | 'number'
     | 'name'
     | 'position'
+    | 'age'
+    | 'birthdate'
+    | 'height'
     | 'team'
-    | 'teamShort',
+    | 'internationalMatches'
+    | 'marketValue',
     string
   > & {
     images: ParsedImageData[];
@@ -68,27 +66,26 @@ export async function example() {
       const parts = row.outerText.split(/\t*\n*\t+\s*|\n+/);
 
       return {
-        index: parts[0],
+        number: parts[0],
         name: parts[1],
         position: parts[2],
-        age: parts[3],
-        birthCity: parts[4],
-        birthCountry:
-          imgArray.length >= 4
-            ? imgArray[2]?.placeholder
-            : imgArray[3]?.placeholder,
-        teamShort: parts[5],
-        team: imgArray[imgArray.length - 1]?.placeholder,
-        league: parts[6],
-        contractExpiration: parts[7],
+        age: parts[3]?.match(/(?<=\()\d+/g)?.[0] ?? '',
+        birthdate: parts[3].match(/^(.*)(?= \()/g)?.[0] ?? '',
+        height: parts[4],
+        team: imgArray[imgArray.length - 2]?.placeholder,
+        internationalMatches: parts[7],
         marketValue: parts[8],
         images: imgArray,
       };
     });
   };
 
-  const urls = await usePage(url, page => page.evaluate(getPages));
-  assert(urls.length > 0, 'Pagination URLs not found');
+  // const urls = await usePage(url, page => page.evaluate(getPages));
+  // assert(urls.length > 0, 'Pagination URLs not found');
+
+  const urls: string[] = [
+    'https://www.transfermarkt.us/detailsuche/spielerdetail/suche/35871095',
+  ];
 
   const results = await Promise.all(
     urls.map(url => usePage(url, page => page.evaluate(pageEvalFn)))
@@ -110,7 +107,7 @@ export async function example() {
   const dataDir = path.join(rootDir, 'data');
   await mkdir(dataDir, {recursive: true});
 
-  const filePath = path.join(dataDir, 'results.json');
+  const filePath = path.join(dataDir, 'results2.json');
   await writeFile(filePath, JSON.stringify(flatResults));
   console.log(`Data written to ${filePath}`);
 }
