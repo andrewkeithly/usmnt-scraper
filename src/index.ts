@@ -6,19 +6,19 @@ import {usePage} from './utils/puppeteer';
 
 export async function example() {
   const url =
-    'https://www.transfermarkt.us/spieler-statistik/legionaere/statistik?land_id=184&land=184&plus=1&page=1';
+    'https://www.transfermarkt.us/detailsuche/spielerdetail/suche/35872508/page/1';
 
   const getPages = (): string[] => {
     const pages: string[] = [];
     const baseUrl =
-      'https://www.transfermarkt.us/spieler-statistik/legionaere/statistik?land_id=184&land=184&plus=1&page=';
+      'https://www.transfermarkt.us/detailsuche/spielerdetail/suche/35872508/page/';
 
     const lastPage =
       document
         .querySelector<HTMLAnchorElement>(
           '.tm-pagination__list-item--icon-last-page > a'
         )
-        ?.href?.match(/(?<=page=)[\d]+/g)?.[0] ?? '1';
+        ?.href?.match(/(?<=page(\/|=))[\d]+/g)?.[0] ?? '1';
     for (let i = 1; i <= parseInt(lastPage); i++) {
       pages.push(`${baseUrl}${i.toString()}`);
     }
@@ -72,18 +72,25 @@ export async function example() {
         height: parts[4],
         team: imgArray[imgArray.length - 2]?.placeholder,
         internationalMatches: parts[7],
-        marketValue: parts[8],
+        marketValue:
+          parts?.[8].match(/(\d+)(\.*)(\d*)((m)|(Th.))\s/)?.[5] === 'm'
+            ? `${parts?.[8].match(/(\d+)(\.*)(\d*)((m)|(Th.))\s/)?.[1]}${
+                parts?.[8].match(/(\d+)(\.*)(\d*)((m)|(Th.))\s/)?.[3]
+              }0000`
+            : parts?.[8].match(/(\d+)(\.*)(\d*)((m)|(Th.))\s/)?.[4] === 'Th.'
+            ? `${parts?.[8].match(/(\d+)(\.*)(\d*)((m)|(Th.))\s/)?.[1]}000`
+            : '',
         images: imgArray,
       };
     });
   };
 
-  // const urls = await usePage(url, page => page.evaluate(getPages));
-  // assert(urls.length > 0, 'Pagination URLs not found');
+  const urls = await usePage(url, page => page.evaluate(getPages));
+  assert(urls.length > 0, 'Pagination URLs not found');
 
-  const urls: string[] = [
-    'https://www.transfermarkt.us/detailsuche/spielerdetail/suche/35871095',
-  ];
+  // const urls: string[] = [
+  //   'https://www.transfermarkt.us/detailsuche/spielerdetail/suche/35871095',
+  // ];
 
   const results = await Promise.all(
     urls.map(url => usePage(url, page => page.evaluate(pageEvalFn)))
