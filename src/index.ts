@@ -6,12 +6,26 @@ import {usePage} from './utils/puppeteer';
 
 export async function example() {
   const url =
-    'https://www.transfermarkt.us/spieler-statistik/legionaere/statistik?land_id=184&land=40&plus=1';
+    'https://www.transfermarkt.us/spieler-statistik/legionaere/statistik?land_id=184&land=184&plus=1&page=1';
 
-  const getPages = (): string[] =>
-    [...document.querySelectorAll<HTMLAnchorElement>('.tm-pagination > li > a')]
-      .slice(0, -2)
-      .map(el => el.href);
+  const getPages = (): string[] => {
+    const pages: string[] = [];
+    const baseUrl =
+      'https://www.transfermarkt.us/spieler-statistik/legionaere/statistik?land_id=184&land=184&plus=1&page=';
+    const lastPaginationEl = document.querySelector<HTMLAnchorElement>(
+      '.tm-pagination__list-item--icon-last-page > a'
+    );
+    const lastPaginationHref = lastPaginationEl?.href;
+    const lastPaginationPage =
+      lastPaginationHref && lastPaginationHref.match(/(?<=page=)[\d]+/g)
+        ? lastPaginationHref.match(/(?<=page=)[\d]+/g)
+        : ['1'];
+    const lastPage = lastPaginationPage ? lastPaginationPage[0] : '1';
+    for (let i = 1; i <= parseInt(lastPage); i++) {
+      pages.push(`${baseUrl}${i.toString()}`);
+    }
+    return pages;
+  };
 
   type ParsedImageData = Record<'placeholder' | 'source', string>;
 
@@ -51,7 +65,7 @@ export async function example() {
         ...row.querySelectorAll<HTMLImageElement>(':scope img'),
       ].map(el => ({placeholder: el.alt, source: el.currentSrc}));
 
-      const parts = row.outerText.split(/\t*\n+\t+\s*|\n*\t+|\n+/);
+      const parts = row.outerText.split(/\t*\n*\t+\s*|\n+/);
 
       return {
         index: parts[0],
@@ -80,6 +94,11 @@ export async function example() {
     urls.map(url => usePage(url, page => page.evaluate(pageEvalFn)))
   );
 
+  const flatResults: ParsedRowData[] = results.reduce(
+    (accumulator, value) => accumulator.concat(value),
+    []
+  );
+
   // Since this is CJS:
   const rootDir = path.resolve(__dirname, '..', '..');
 
@@ -92,7 +111,7 @@ export async function example() {
   await mkdir(dataDir, {recursive: true});
 
   const filePath = path.join(dataDir, 'results.json');
-  await writeFile(filePath, JSON.stringify(results));
+  await writeFile(filePath, JSON.stringify(flatResults));
   console.log(`Data written to ${filePath}`);
 }
 
