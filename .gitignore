@@ -36,5 +36,8 @@ node_modules/
 # build files
 build/
 
+# data files
+data/
+
 # vscode
 .vscode
