@@ -1,8 +1,9 @@
-import {mkdir, lstat, writeFile} from 'node:fs/promises';
-import * as path from 'node:path';
+// import {mkdir, lstat} from 'node:fs/promises';
+// import * as path from 'node:path';
 
 import {assert} from './utils/asserts';
 import {usePage} from './utils/puppeteer';
+import {storeData} from './utils/firestore-config.cjs';
 
 export async function example() {
   const url =
@@ -88,10 +89,6 @@ export async function example() {
   const urls = await usePage(url, page => page.evaluate(getPages));
   assert(urls.length > 0, 'Pagination URLs not found');
 
-  // const urls: string[] = [
-  //   'https://www.transfermarkt.us/detailsuche/spielerdetail/suche/35871095',
-  // ];
-
   const results = await Promise.all(
     urls.map(url => usePage(url, page => page.evaluate(pageEvalFn)))
   );
@@ -102,18 +99,19 @@ export async function example() {
   );
 
   // Since this is CJS:
-  const rootDir = path.resolve(__dirname, '..', '..');
+  // const rootDir = path.resolve(__dirname, '..', '..');
 
-  assert(
-    (await lstat(path.join(rootDir, 'package.json'))).isFile(),
-    '"package.json" not found'
-  );
+  // assert(
+  //   (await lstat(path.join(rootDir, 'package.json'))).isFile(),
+  //   '"package.json" not found'
+  // );
 
-  const dataDir = path.join(rootDir, 'data');
-  await mkdir(dataDir, {recursive: true});
+  // const dataDir = path.join(rootDir, 'data');
+  // await mkdir(dataDir, {recursive: true});
 
-  const filePath = path.join(dataDir, 'results2.json');
-  await writeFile(filePath, JSON.stringify(flatResults));
+  // const filePath = path.join(dataDir, 'results.json');
+  // await writeFile(filePath, JSON.stringify(flatResults));
+  await storeData(flatResults);
   console.log(`Data written to ${filePath}`);
 }
 
