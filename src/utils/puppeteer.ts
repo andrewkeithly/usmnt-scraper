@@ -2,7 +2,8 @@ import * as puppeteer from 'puppeteer';
 import type {Page, Viewport} from 'puppeteer';
 
 const PUPPETEER_OPTIONS = {
-  headless: true,
+  headless: false,
+  devtools: true,
   args: [
     '--disable-gpu',
     '--disable-dev-shm-usage',

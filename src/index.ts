@@ -84,7 +84,7 @@ const getPlayers = (): ParsedRowData[] => {
     '.tm-pagination__list-item tm-pagination__list-item--icon-next-page > a'
   );
 
-  console.log(nextPageLink);
+  debugger;
 
   return rowsElementArr.map(row => {
     const imgArray: ParsedImageData[] = [
